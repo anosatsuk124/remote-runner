@@ -1,0 +1,12 @@
+remote:
+  host: "user@remote-host"
+  path: "/tmp/remote-workspace"
+  port: 8080
+sync:
+  source: "./"
+  exclude:
+    - ".git"
+    - "*.log"
+    - "node_modules"
+    - "target"
+    - "*.tmp"
