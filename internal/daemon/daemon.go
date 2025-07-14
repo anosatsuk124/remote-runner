@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -84,7 +85,16 @@ func (d *Daemon) executeCommand(executable, workdir string) error {
 		d.currentProc.Wait()
 	}
 
-	cmd := exec.Command(executable)
+	execPath := executable
+	if !strings.HasPrefix(executable, "/") {
+		execPath = fmt.Sprintf("%s/%s", workdir, executable)
+	}
+
+	if _, err := os.Stat(execPath); os.IsNotExist(err) {
+		return fmt.Errorf("executable '%s' not found in workdir '%s'", executable, workdir)
+	}
+
+	cmd := exec.Command(execPath)
 	cmd.Dir = workdir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -92,8 +102,10 @@ func (d *Daemon) executeCommand(executable, workdir string) error {
 
 	d.currentProc = cmd
 
+	fmt.Printf("Executing: %s (in %s)\n", execPath, workdir)
+
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start command: %w", err)
+		return fmt.Errorf("failed to start '%s' in '%s': %w", execPath, workdir, err)
 	}
 
 	go func() {
@@ -103,6 +115,7 @@ func (d *Daemon) executeCommand(executable, workdir string) error {
 			d.currentProc = nil
 		}
 		d.procMutex.Unlock()
+		fmt.Printf("Process '%s' finished\n", execPath)
 	}()
 
 	return nil

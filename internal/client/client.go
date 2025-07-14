@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -26,7 +27,7 @@ func Execute(cfg *config.Config, executable string) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("http://%s:%d/execute", cfg.Remote.Host, cfg.Remote.Port)
+	url := fmt.Sprintf("http://%s:%d/execute", cfg.Remote.HttpHost, cfg.Remote.Port)
 	
 	client := &http.Client{
 		Timeout: 30 * time.Second,
@@ -39,7 +40,8 @@ func Execute(cfg *config.Config, executable string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("remote execution failed with status: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("remote execution failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -13,9 +14,10 @@ type Config struct {
 }
 
 type RemoteConfig struct {
-	Host string `yaml:"host"`
-	Path string `yaml:"path"`
-	Port int    `yaml:"port"`
+	Host     string `yaml:"host"`
+	HttpHost string `yaml:"http_host"`
+	Path     string `yaml:"path"`
+	Port     int    `yaml:"port"`
 }
 
 type SyncConfig struct {
@@ -38,5 +40,16 @@ func LoadConfig(path string) (*Config, error) {
 		config.Remote.Port = 8080
 	}
 
+	if config.Remote.HttpHost == "" {
+		config.Remote.HttpHost = extractHostname(config.Remote.Host)
+	}
+
 	return &config, nil
+}
+
+func extractHostname(host string) string {
+	if idx := strings.Index(host, "@"); idx != -1 {
+		return host[idx+1:]
+	}
+	return host
 }
